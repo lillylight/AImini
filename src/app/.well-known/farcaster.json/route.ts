@@ -12,7 +12,7 @@ function withValidProperties(
 }
 
 export async function GET() {
-  const URL = process.env.NEXT_PUBLIC_URL || 'https://aiancestry.xyz';
+  const URL = 'https://aianceestry-5h7h.vercel.app';
 
   return Response.json({
     accountAssociation: {
