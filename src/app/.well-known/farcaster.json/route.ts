@@ -1,8 +1,3 @@
-/**
- * Farcaster integration route handler
- * This file serves the farcaster.json manifest that describes your Mini App
- */
-
 function withValidProperties(
   properties: Record<string, undefined | string | string[]>,
 ) {
@@ -17,13 +12,13 @@ function withValidProperties(
 }
 
 export async function GET() {
-  const URL = process.env.NEXT_PUBLIC_URL || 'https://aianceestry.xyz';
+  const URL = process.env.NEXT_PUBLIC_URL || 'https://aiancestry.xyz';
 
   return Response.json({
     accountAssociation: {
-      header: process.env.FARCASTER_HEADER,
-      payload: process.env.FARCASTER_PAYLOAD,
-      signature: process.env.FARCASTER_SIGNATURE,
+      header: process.env.FARCASTER_HEADER || "MISSING_HEADER",
+      payload: process.env.FARCASTER_PAYLOAD || "MISSING_PAYLOAD",
+      signature: process.env.FARCASTER_SIGNATURE || "MISSING_SIGNATURE",
     },
     frame: withValidProperties({
       version: "1",
