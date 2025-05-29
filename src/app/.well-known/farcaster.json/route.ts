@@ -1,5 +1,6 @@
 export async function GET() {
-  const URL = 'https://aianceestry-5h7h.vercel.app';
+  // Use the public URL from environment variables or fallback to vercel.app
+  const URL = process.env.NEXT_PUBLIC_URL || 'https://aiancestry.xyz';
   
   // Required account association - ensure these environment variables are set in your deployment
   const accountAssociation = {
