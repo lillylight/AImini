@@ -16,23 +16,6 @@ import {
   useViewProfile,
   useNotification
 } from '@coinbase/onchainkit/minikit';
-// Custom components to replace wallet components
-const Wallet = ({children}: {children: React.ReactNode}) => <>{children}</>;
-const ConnectWallet = ({className, disconnectedLabel, children}: {className?: string, disconnectedLabel?: string, children?: React.ReactNode}) => <button className={className}>{children || disconnectedLabel}</button>;
-const ConnectWalletText = ({children}: {children?: React.ReactNode}) => <span>{children}</span>;
-const Avatar = ({className}: {className?: string}) => <span className={className}>🔵</span>;
-const Name = ({className}: {className?: string}) => <span className={className}>Account</span>;
-const Identity = ({className, hasCopyAddressOnClick, children}: {className?: string, hasCopyAddressOnClick?: boolean, children: React.ReactNode}) => <div className={className}>{children}</div>;
-const Address = ({className}: {className?: string}) => <span className={className}>0x...1234</span>;
-const WalletDropdown = ({children}: {children: React.ReactNode}) => <div>{children}</div>;
-const WalletDropdownLink = ({className, icon, href, children}: {className?: string, icon?: string, href?: string, children: React.ReactNode}) => <a className={className} href={href}>{children}</a>;
-const WalletDropdownDisconnect = ({className}: {className?: string}) => <button className={className}>Disconnect</button>;
-// Checkout components
-import {
-  Checkout,
-  CheckoutButton,
-  CheckoutStatus
-} from '@coinbase/onchainkit/checkout';
 
 const PRODUCT_ID = process.env.NEXT_PUBLIC_PRODUCT_ID || '';
 
@@ -678,99 +661,62 @@ export default function Home() {
 
   return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-[#f8f9fa] to-[#e5e7eb] py-12 relative">
-        {/* Wallet connect button top right, round border, full dropdown */}
+        {/* Wallet status and MiniKit buttons */}
         <div className="absolute top-6 right-8 z-50 flex flex-row items-center space-x-2">
-  <Wallet>
-    <ConnectWallet
-      className={`ock-connect-glass px-4 py-2 rounded-full font-bold text-white text-base shadow-lg border border-gray-700 bg-gradient-to-br from-gray-800 to-gray-700/80 backdrop-blur-lg bg-opacity-70 hover:bg-gray-900/80 transition-all duration-200 focus:outline-none ${isConnected ? 'from-green-600 to-indigo-600 border-green-400/30' : 'from-indigo-600 to-green-600 border-indigo-500/30'}`}
-      disconnectedLabel="Connect Wallet"
-    >
-      {isConnected && (
-        <div className="mr-2 relative">
-          <motion.div 
-            animate={{ scale: [1, 1.5, 1] }}
-            transition={{ repeat: Infinity, duration: 2 }}
-            className="absolute w-2 h-2 bg-green-400 rounded-full right-0 top-0 opacity-70"
-          ></motion.div>
-          <div className="absolute w-2 h-2 bg-green-500 rounded-full right-0 top-0"></div>
-        </div>
-      )}
-      <Avatar className="h-6 w-6" />
-      <ConnectWalletText>
-        {isConnected ? '' : 'Connect Wallet'}
-      </ConnectWalletText>
-      <Name className="font-medium" />
-    </ConnectWallet>
-    <WalletDropdown>
-      <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
-        <Avatar className="h-8 w-8" />
-        <Name className="font-bold ml-2" />
-        <Address className="text-gray-400 ml-2" />
-      </Identity>
-      <WalletDropdownLink
-        className="py-3 rounded-xl flex items-center bg-white/10 hover:bg-white/20 text-black font-medium pl-4 pr-2 my-1 transition-all duration-200 hover:shadow-lg hover:translate-y-[-2px]"
-        icon="wallet"
-        href="https://keys.coinbase.com"
-      >
-        Wallet
-      </WalletDropdownLink>
-      {(() => {
-        const { address } = useAccount();
-        if (!address) return null; // Only show FundButton if address is present
-        // Simple URL for Coinbase onramp
-        const onrampBuyUrl = `https://www.coinbase.com/buy?defaultAmount=20&defaultCurrency=USD`;
-        return (
-          <button
-            type="button"
-            className="w-full py-3 rounded-xl flex items-center justify-start bg-white/10 hover:bg-white/20 text-black font-medium transition-all duration-200 my-1 pl-4 pr-2 hover:shadow-lg hover:translate-y-[-2px]"
-            onClick={() => window.open(onrampBuyUrl, '_blank', 'noopener,noreferrer')}
-          >
-            <FaPlus className="mr-3 text-xl" />
-            <span>Funds</span>
-          </button>
-        );
-      })()}
-      <div className="pt-2 pb-2">
-        <WalletDropdownDisconnect className="w-full bg-white/10 hover:bg-white/20 text-black font-medium py-3 rounded-xl transition-all duration-200 hover:shadow-lg hover:translate-y-[-2px]" />
-      </div>
-    </WalletDropdown>
-  </Wallet>
+          {/* Simple wallet status indicator */}
+          <div className={`px-4 py-2 rounded-full font-bold text-white text-base shadow-lg border border-gray-700 bg-gradient-to-br backdrop-blur-lg bg-opacity-70 transition-all duration-200 focus:outline-none ${isConnected ? 'from-green-600 to-indigo-600 border-green-400/30' : 'from-indigo-600 to-green-600 border-indigo-500/30'}`}>
+            {isConnected ? (
+              <div className="flex items-center">
+                <div className="mr-2 relative">
+                  <motion.div 
+                    animate={{ scale: [1, 1.5, 1] }}
+                    transition={{ repeat: Infinity, duration: 2 }}
+                    className="absolute w-2 h-2 bg-green-400 rounded-full right-0 top-0 opacity-70"
+                  ></motion.div>
+                  <div className="absolute w-2 h-2 bg-green-500 rounded-full right-0 top-0"></div>
+                </div>
+                <span className="truncate max-w-[100px]">{address ? address.substring(0, 6) + '...' + address.substring(address.length - 4) : 'Connected'}</span>
+              </div>
+            ) : (
+              <span>Connect Wallet</span>
+            )}
+          </div>
 
-  {/* MiniKit Save Frame, Close, Profile, Send Notification buttons */}
-  <div className="flex flex-row items-center space-x-1 pr-1">
-    <button
-      type="button"
-      className="cursor-pointer bg-transparent font-semibold text-sm px-2 py-1 border border-blue-400 rounded-xl text-blue-700 hover:bg-blue-50 ml-2"
-      onClick={handleAddFrame}
-    >
-      SAVE FRAME
-    </button>
-    <button
-      type="button"
-      className="cursor-pointer bg-transparent font-semibold text-sm px-2 py-1 border border-gray-400 rounded-xl text-gray-700 hover:bg-gray-100"
-      onClick={close}
-    >
-      CLOSE
-    </button>
-    <button
-      type="button"
-      onClick={handleViewProfile}
-      className="cursor-pointer bg-transparent font-semibold text-sm px-2 py-1 border border-purple-400 rounded-xl text-purple-700 hover:bg-purple-50"
-    >
-      PROFILE
-    </button>
-    {context?.client?.added && (
-      <button
-        type="button"
-        onClick={handleSendNotification}
-        className="cursor-pointer bg-transparent font-semibold text-sm px-2 py-1 border border-green-400 rounded-xl text-green-700 hover:bg-green-50 disabled:opacity-50"
-        disabled={notificationSent}
-      >
-        {notificationSent ? 'SENT!' : 'SEND NOTIFICATION'}
-      </button>
-    )}
-  </div>
-</div>
+          {/* MiniKit Save Frame, Close, Profile, Send Notification buttons */}
+          <div className="flex flex-row items-center space-x-1 pr-1">
+            <button
+              type="button"
+              className="cursor-pointer bg-transparent font-semibold text-sm px-2 py-1 border border-blue-400 rounded-xl text-blue-700 hover:bg-blue-50 ml-2"
+              onClick={handleAddFrame}
+            >
+              SAVE FRAME
+            </button>
+            <button
+              type="button"
+              className="cursor-pointer bg-transparent font-semibold text-sm px-2 py-1 border border-gray-400 rounded-xl text-gray-700 hover:bg-gray-100"
+              onClick={close}
+            >
+              CLOSE
+            </button>
+            <button
+              type="button"
+              onClick={handleViewProfile}
+              className="cursor-pointer bg-transparent font-semibold text-sm px-2 py-1 border border-purple-400 rounded-xl text-purple-700 hover:bg-purple-50"
+            >
+              PROFILE
+            </button>
+            {context?.client?.added && (
+              <button
+                type="button"
+                onClick={handleSendNotification}
+                className="cursor-pointer bg-transparent font-semibold text-sm px-2 py-1 border border-green-400 rounded-xl text-green-700 hover:bg-green-50 disabled:opacity-50"
+                disabled={notificationSent}
+              >
+                {notificationSent ? 'SENT!' : 'SEND NOTIFICATION'}
+              </button>
+            )}
+          </div>
+        </div>
 
 
         {/* Wallet connection overlay - only shown when wallet is not connected AND component is mounted */}
@@ -787,7 +733,7 @@ export default function Home() {
                 Please connect your wallet using the button in the top right corner to access AI Ancestry and reveal your roots.
               </p>
               {/* <div className="animate-bounce bg-indigo-600 p-2 w-10 h-10 ring-1 ring-indigo-400/50 shadow-lg rounded-full flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
                 </svg>
               </div> */}
@@ -874,25 +820,18 @@ export default function Home() {
                           }}
                         >
                           <div style={{ pointerEvents: 'auto', zIndex: 4 }}>
-                            <Checkout productId={PRODUCT_ID} onStatus={(status: {statusName: string}) => {
-                                    if (status.statusName === 'success') {
-                                      setStep('processing');
-                                      triggerAnalysis(image);
-                                    }
-                                  }}>
-                              <div className="flex flex-col items-center w-full">
-                                <div style={{ display: step === 'upload' ? 'block' : 'none' }}>
-                                  <CheckoutButton
-                                    coinbaseBranded
-                                    className="openai-btn openai-btn-green px-4 py-2 text-base mx-auto mt-7 w-40"
-                                  />
-
-                                </div>
-                                <div className="flex justify-center w-full mt-2">
-                                  <CheckoutStatus />
-                                </div>
-                              </div>
-                            </Checkout>
+                            <button 
+                              id="pay-btn"
+                              className="openai-btn openai-btn-green px-4 py-2 text-base mx-auto mt-7 w-40"
+                              onClick={() => {
+                                if (image) {
+                                  setStep('processing');
+                                  triggerAnalysis(image);
+                                }
+                              }}
+                            >
+                              REVEAL ANCESTRY
+                            </button>
                           </div>
                         </div>
                       )}
