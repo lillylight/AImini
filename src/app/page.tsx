@@ -1,25 +1,21 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import UploadArea from "../components/UploadArea";
-// import PremiumUploadArea from "../components/PremiumUploadArea";
 import AncestryPieChart, { AncestryDatum } from "../components/AncestryPieChart";
 import { FaFilePdf, FaTwitter, FaFacebook, FaShare, FaPlus } from "react-icons/fa";
 import { chartToImage } from "../utils/chartToImage";
-import {
-  useWalletContext,
-  Wallet,
-  ConnectWallet,
-  WalletDropdown,
-  WalletDropdownLink,
-  WalletDropdownDisconnect,
-  ConnectWalletText,
-} from '@coinbase/onchainkit/wallet';
-import { Address, Avatar, Name, Identity, EthBalance } from '@coinbase/onchainkit/identity';
-import { Checkout, CheckoutButton, CheckoutStatus } from '@coinbase/onchainkit/checkout';
 import { motion } from 'framer-motion';
-// Import useAccount from wagmi to properly detect wallet connection
 import { useAccount } from 'wagmi';
-import { FundButton, getOnrampBuyUrl } from '@coinbase/onchainkit/fund';
+// MiniKit hooks
+import {
+  useMiniKit,
+  useAddFrame,
+  useOpenUrl,
+  useClose,
+  usePrimaryButton,
+  useViewProfile,
+  useNotification
+} from '@coinbase/onchainkit/minikit';
 
 const PRODUCT_ID = process.env.NEXT_PUBLIC_PRODUCT_ID || '';
 
@@ -71,6 +67,50 @@ function splitResultCards(text: string): string[] {
 }
 
 export default function Home() {
+  // MiniKit hooks
+  const { setFrameReady, isFrameReady, context } = useMiniKit();
+  const addFrame = useAddFrame();
+  const openUrl = useOpenUrl();
+  const close = useClose();
+  const viewProfile = useViewProfile();
+  const sendNotification = useNotification();
+
+  // Frame ready effect
+  useEffect(() => {
+    if (!isFrameReady) {
+      setFrameReady();
+    }
+  }, [setFrameReady, isFrameReady]);
+
+  // AddFrame handler
+  const handleAddFrame = async () => {
+    const result = await addFrame();
+    if (result) {
+      console.log('Frame added:', result.url, result.token);
+      // In production, save these to DB for notifications
+    }
+  };
+
+  // Profile handler
+  const handleViewProfile = () => {
+    viewProfile();
+  };
+
+  // Notification handler
+  const [notificationSent, setNotificationSent] = useState(false);
+  const handleSendNotification = async () => {
+    try {
+      await sendNotification({
+        title: 'New High Score! 🎉',
+        body: 'Congratulations on achieving a new high score!'
+      });
+      setNotificationSent(true);
+      setTimeout(() => setNotificationSent(false), 30000);
+    } catch (error) {
+      console.error('Failed to send notification:', error);
+    }
+  };
+
   // Use wagmi's useAccount hook for reliable wallet connection detection
   const { isConnected, address } = useAccount();
   const [mounted, setMounted] = useState(false);
@@ -104,6 +144,25 @@ export default function Home() {
   const [error, setError] = useState("");
   const [progress, setProgress] = useState(0);
   const [step, setStep] = useState<'upload' | 'processing' | 'result'>('upload');
+
+  // MiniKit usePrimaryButton integration: Use for main action (Reveal/Upload)
+  usePrimaryButton(
+    {
+      text: step === 'upload' ? 'REVEAL ANCESTRY' : step === 'processing' ? 'PROCESSING...' : 'NEW READING',
+      disabled: step === 'processing',
+    },
+    () => {
+      if (step === 'upload' && image) {
+        setStep('processing');
+        triggerAnalysis(image);
+      } else if (step === 'result') {
+        setStep('upload');
+        setImage(null);
+        setResult("");
+        setFadeOut(false);
+      }
+    }
+  );
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [showShareModal, setShowShareModal] = useState(false);
   const [fadeOut, setFadeOut] = useState(false);
@@ -606,70 +665,105 @@ export default function Home() {
   return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-[#f8f9fa] to-[#e5e7eb] py-12 relative">
         {/* Wallet connect button top right, round border, full dropdown */}
-        <div className="absolute top-6 right-8 z-50">
-          <Wallet>
-            <ConnectWallet
-              className={`ock-connect-glass px-4 py-2 rounded-full font-bold text-white text-base shadow-lg border border-gray-700 bg-gradient-to-br from-gray-800 to-gray-700/80 backdrop-blur-lg bg-opacity-70 hover:bg-gray-900/80 transition-all duration-200 focus:outline-none ${isConnected ? 'from-green-600 to-indigo-600 border-green-400/30' : 'from-indigo-600 to-green-600 border-indigo-500/30'}`}
-              disconnectedLabel="Connect Wallet"
-            >
-              {isConnected && (
-                <div className="mr-2 relative">
-                  <motion.div 
-                    animate={{ scale: [1, 1.5, 1] }}
-                    transition={{ repeat: Infinity, duration: 2 }}
-                    className="absolute w-2 h-2 bg-green-400 rounded-full right-0 top-0 opacity-70"
-                  ></motion.div>
-                  <div className="absolute w-2 h-2 bg-green-500 rounded-full right-0 top-0"></div>
-                </div>
-              )}
-              <Avatar className="h-6 w-6" />
-              <ConnectWalletText>
-                {isConnected ? '' : 'Connect Wallet'}
-              </ConnectWalletText>
-              <Name className="font-medium" />
-            </ConnectWallet>
-            <WalletDropdown>
-              <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
-                <Avatar className="h-8 w-8" />
-                <Name className="font-bold ml-2" />
-                <Address className="text-gray-400 ml-2" />
-              </Identity>
-              <WalletDropdownLink
-                className="py-3 rounded-xl flex items-center bg-white/10 hover:bg-white/20 text-black font-medium pl-4 pr-2 my-1 transition-all duration-200 hover:shadow-lg hover:translate-y-[-2px]"
-                icon="wallet"
-                href="https://keys.coinbase.com"
-              >
-                Wallet
-              </WalletDropdownLink>
-              {(() => {
-  const projectId = process.env.NEXT_PUBLIC_CDP_PROJECT_ID || '';
-  const { address } = useAccount();
-  if (!address) return null; // Only show FundButton if address is present
-  const onrampBuyUrl = getOnrampBuyUrl({
-    projectId,
-    addresses: { [address]: ['base'] },
-    assets: ['USDC'],
-    presetFiatAmount: 20,
-    fiatCurrency: 'USD',
-    // Optionally, set redirectUrl: window.location.origin
-  });
-  return (
+        <div className="absolute top-6 right-8 z-50 flex flex-row items-center space-x-2">
+  <Wallet>
+    <ConnectWallet
+      className={`ock-connect-glass px-4 py-2 rounded-full font-bold text-white text-base shadow-lg border border-gray-700 bg-gradient-to-br from-gray-800 to-gray-700/80 backdrop-blur-lg bg-opacity-70 hover:bg-gray-900/80 transition-all duration-200 focus:outline-none ${isConnected ? 'from-green-600 to-indigo-600 border-green-400/30' : 'from-indigo-600 to-green-600 border-indigo-500/30'}`}
+      disconnectedLabel="Connect Wallet"
+    >
+      {isConnected && (
+        <div className="mr-2 relative">
+          <motion.div 
+            animate={{ scale: [1, 1.5, 1] }}
+            transition={{ repeat: Infinity, duration: 2 }}
+            className="absolute w-2 h-2 bg-green-400 rounded-full right-0 top-0 opacity-70"
+          ></motion.div>
+          <div className="absolute w-2 h-2 bg-green-500 rounded-full right-0 top-0"></div>
+        </div>
+      )}
+      <Avatar className="h-6 w-6" />
+      <ConnectWalletText>
+        {isConnected ? '' : 'Connect Wallet'}
+      </ConnectWalletText>
+      <Name className="font-medium" />
+    </ConnectWallet>
+    <WalletDropdown>
+      <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
+        <Avatar className="h-8 w-8" />
+        <Name className="font-bold ml-2" />
+        <Address className="text-gray-400 ml-2" />
+      </Identity>
+      <WalletDropdownLink
+        className="py-3 rounded-xl flex items-center bg-white/10 hover:bg-white/20 text-black font-medium pl-4 pr-2 my-1 transition-all duration-200 hover:shadow-lg hover:translate-y-[-2px]"
+        icon="wallet"
+        href="https://keys.coinbase.com"
+      >
+        Wallet
+      </WalletDropdownLink>
+      {(() => {
+        const projectId = process.env.NEXT_PUBLIC_CDP_PROJECT_ID || '';
+        const { address } = useAccount();
+        if (!address) return null; // Only show FundButton if address is present
+        const onrampBuyUrl = getOnrampBuyUrl({
+          projectId,
+          addresses: { [address]: ['base'] },
+          assets: ['USDC'],
+          presetFiatAmount: 20,
+          fiatCurrency: 'USD',
+        });
+        return (
+          <button
+            type="button"
+            className="w-full py-3 rounded-xl flex items-center justify-start bg-white/10 hover:bg-white/20 text-black font-medium transition-all duration-200 my-1 pl-4 pr-2 hover:shadow-lg hover:translate-y-[-2px]"
+            onClick={() => window.open(onrampBuyUrl, '_blank', 'noopener,noreferrer')}
+          >
+            <FaPlus className="mr-3 text-xl" />
+            <span>Funds</span>
+          </button>
+        );
+      })()}
+      <div className="pt-2 pb-2">
+        <WalletDropdownDisconnect className="w-full bg-white/10 hover:bg-white/20 text-black font-medium py-3 rounded-xl transition-all duration-200 hover:shadow-lg hover:translate-y-[-2px]" />
+      </div>
+    </WalletDropdown>
+  </Wallet>
+
+  {/* MiniKit Save Frame, Close, Profile, Send Notification buttons */}
+  <div className="flex flex-row items-center space-x-1 pr-1">
     <button
       type="button"
-      className="w-full py-3 rounded-xl flex items-center justify-start bg-white/10 hover:bg-white/20 text-black font-medium transition-all duration-200 my-1 pl-4 pr-2 hover:shadow-lg hover:translate-y-[-2px]"
-      onClick={() => window.open(onrampBuyUrl, '_blank', 'noopener,noreferrer')}
+      className="cursor-pointer bg-transparent font-semibold text-sm px-2 py-1 border border-blue-400 rounded-xl text-blue-700 hover:bg-blue-50 ml-2"
+      onClick={handleAddFrame}
     >
-      <FaPlus className="mr-3 text-xl" />
-      <span>Funds</span>
+      SAVE FRAME
     </button>
-  );
-})()}
-              <div className="pt-2 pb-2">
-                <WalletDropdownDisconnect className="w-full bg-white/10 hover:bg-white/20 text-black font-medium py-3 rounded-xl transition-all duration-200 hover:shadow-lg hover:translate-y-[-2px]" />
-              </div>
-            </WalletDropdown>
-          </Wallet>
-        </div>
+    <button
+      type="button"
+      className="cursor-pointer bg-transparent font-semibold text-sm px-2 py-1 border border-gray-400 rounded-xl text-gray-700 hover:bg-gray-100"
+      onClick={close}
+    >
+      CLOSE
+    </button>
+    <button
+      type="button"
+      onClick={handleViewProfile}
+      className="cursor-pointer bg-transparent font-semibold text-sm px-2 py-1 border border-purple-400 rounded-xl text-purple-700 hover:bg-purple-50"
+    >
+      PROFILE
+    </button>
+    {context?.client?.added && (
+      <button
+        type="button"
+        onClick={handleSendNotification}
+        className="cursor-pointer bg-transparent font-semibold text-sm px-2 py-1 border border-green-400 rounded-xl text-green-700 hover:bg-green-50 disabled:opacity-50"
+        disabled={notificationSent}
+      >
+        {notificationSent ? 'SENT!' : 'SEND NOTIFICATION'}
+      </button>
+    )}
+  </div>
+</div>
+
 
         {/* Wallet connection overlay - only shown when wallet is not connected AND component is mounted */}
         {mounted && !isConnected && (
@@ -906,6 +1000,17 @@ export default function Home() {
             )}
           </>
         )}
+        {/* MiniKit openUrl footer button */}
+        <footer className="absolute bottom-4 flex items-center w-screen max-w-[520px] justify-center">
+          <button
+            type="button"
+            className="mt-4 px-2 py-1 flex justify-start rounded-2xl font-semibold opacity-40 border border-black text-xs"
+            onClick={() => openUrl('https://base.org/builders/minikit')}
+          >
+            BUILT WITH MINIKIT
+          </button>
+        </footer>
       </div>
   );
 }
+
