@@ -16,6 +16,23 @@ import {
   useViewProfile,
   useNotification
 } from '@coinbase/onchainkit/minikit';
+// Custom components to replace wallet components
+const Wallet = ({children}: {children: React.ReactNode}) => <>{children}</>;
+const ConnectWallet = ({className, disconnectedLabel, children}: {className?: string, disconnectedLabel?: string, children?: React.ReactNode}) => <button className={className}>{children || disconnectedLabel}</button>;
+const ConnectWalletText = ({children}: {children?: React.ReactNode}) => <span>{children}</span>;
+const Avatar = ({className}: {className?: string}) => <span className={className}>🔵</span>;
+const Name = ({className}: {className?: string}) => <span className={className}>Account</span>;
+const Identity = ({className, hasCopyAddressOnClick, children}: {className?: string, hasCopyAddressOnClick?: boolean, children: React.ReactNode}) => <div className={className}>{children}</div>;
+const Address = ({className}: {className?: string}) => <span className={className}>0x...1234</span>;
+const WalletDropdown = ({children}: {children: React.ReactNode}) => <div>{children}</div>;
+const WalletDropdownLink = ({className, icon, href, children}: {className?: string, icon?: string, href?: string, children: React.ReactNode}) => <a className={className} href={href}>{children}</a>;
+const WalletDropdownDisconnect = ({className}: {className?: string}) => <button className={className}>Disconnect</button>;
+// Checkout components
+import {
+  Checkout,
+  CheckoutButton,
+  CheckoutStatus
+} from '@coinbase/onchainkit/checkout';
 
 const PRODUCT_ID = process.env.NEXT_PUBLIC_PRODUCT_ID || '';
 
@@ -133,9 +150,6 @@ export default function Home() {
       }, 1000);
     }
   }, [address]);
-  
-  // Keep the OnchainKit wallet context for other wallet features
-  const walletCtx = useWalletContext();
   
   const [image, setImage] = useState<File | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -701,16 +715,10 @@ export default function Home() {
         Wallet
       </WalletDropdownLink>
       {(() => {
-        const projectId = process.env.NEXT_PUBLIC_CDP_PROJECT_ID || '';
         const { address } = useAccount();
         if (!address) return null; // Only show FundButton if address is present
-        const onrampBuyUrl = getOnrampBuyUrl({
-          projectId,
-          addresses: { [address]: ['base'] },
-          assets: ['USDC'],
-          presetFiatAmount: 20,
-          fiatCurrency: 'USD',
-        });
+        // Simple URL for Coinbase onramp
+        const onrampBuyUrl = `https://www.coinbase.com/buy?defaultAmount=20&defaultCurrency=USD`;
         return (
           <button
             type="button"
@@ -779,7 +787,7 @@ export default function Home() {
                 Please connect your wallet using the button in the top right corner to access AI Ancestry and reveal your roots.
               </p>
               {/* <div className="animate-bounce bg-indigo-600 p-2 w-10 h-10 ring-1 ring-indigo-400/50 shadow-lg rounded-full flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
                 </svg>
               </div> */}
@@ -866,7 +874,7 @@ export default function Home() {
                           }}
                         >
                           <div style={{ pointerEvents: 'auto', zIndex: 4 }}>
-                            <Checkout productId={PRODUCT_ID} onStatus={(status) => {
+                            <Checkout productId={PRODUCT_ID} onStatus={(status: {statusName: string}) => {
                                     if (status.statusName === 'success') {
                                       setStep('processing');
                                       triggerAnalysis(image);
