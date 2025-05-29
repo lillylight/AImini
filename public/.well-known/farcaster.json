@@ -1,0 +1,19 @@
+{
+  "id": "aianceestry-5h7h.vercel.app",
+  "name": "AI Ancestry",
+  "subtitle": "Discover your ancestry through AI",
+  "description": "AI-powered ancestry analysis from your photos",
+  "iconUrl": "https://aianceestry-5h7h.vercel.app/icon.png",
+  "splashImageUrl": "https://aianceestry-5h7h.vercel.app/splash.png",
+  "splashBackgroundColor": "#1a1a1a",
+  "homeUrl": "https://aianceestry-5h7h.vercel.app",
+  "webhookUrl": "https://aianceestry-5h7h.vercel.app/api/webhook",
+  "primaryCategory": "Entertainment",
+  "categories": ["entertainment"],
+  "platforms": ["web"],
+  "heroImageUrl": "https://aianceestry-5h7h.vercel.app/hero.png",
+  "tagline": "Reveal your ancestry through AI",
+  "ogTitle": "AI Ancestry",
+  "ogDescription": "Discover your ancestry through AI",
+  "ogImageUrl": "https://aianceestry-5h7h.vercel.app/og.png"
+}

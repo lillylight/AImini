@@ -1,16 +1,3 @@
-function withValidProperties(
-  properties: Record<string, undefined | string | string[]>,
-) {
-  return Object.fromEntries(
-    Object.entries(properties).filter(([key, value]) => {
-      if (Array.isArray(value)) {
-        return value.length > 0;
-      }
-      return !!value;
-    }),
-  );
-}
-
 export async function GET() {
   const URL = 'https://aianceestry-5h7h.vercel.app';
   return new Response(
