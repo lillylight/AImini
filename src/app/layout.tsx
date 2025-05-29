@@ -19,7 +19,9 @@ const geistMono = Geist_Mono({
 });
 
 export async function generateMetadata(): Promise<Metadata> {
+  // Hardcode the deployment URL to ensure all assets are properly accessible
   const URL = 'https://aianceestry-5h7h.vercel.app';
+  
   return {
     title: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || "AI Ancestry",
     description: "AI-powered ancestry analysis",
